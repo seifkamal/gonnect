@@ -1,0 +1,19 @@
+version: "3.5"
+
+services:
+    server:
+        build: .
+        ports:
+            - "5000:5000"
+        volumes:
+            - .:/app
+        links:
+            - db
+
+    db:
+        image: mysql:5.7.26
+        ports:
+            - "3320:3306"
+        environment:
+            MYSQL_DATABASE: "gonnect"
+            MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
