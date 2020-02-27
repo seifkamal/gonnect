@@ -6,10 +6,9 @@ import (
 	"net/http"
 	"os"
 
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
-
-	"github.com/safe-k/gonnect/internal"
-	"github.com/safe-k/gonnect/pkg/player/connection"
 )
 
 func init() {
@@ -24,20 +23,23 @@ func main() {
 		log.Fatalln("DB environment variable not set")
 	}
 
-	store, err := internal.ConnectStorage(dbUrl)
+	DB, err := sqlx.Connect("mysql", dbUrl)
 	if err != nil {
-		log.Fatalln("Could not connect to DB")
+		log.Fatalln("Could not connect to DB", err)
 	}
 
-	defer store.Disconnect()
+	defer DB.Close()
+
+	s := &server{DB}
+
+	http.Handle("/player/connect", s.handlePlayerConnect())
+
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println("Could not complete request:", err)
 			return
 		}
 	}()
-
-	http.Handle("/player/connect", connection.Handler(&store))
 
 	const port = ":5000"
 	fmt.Println("Listening on port", port)

@@ -8,29 +8,21 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
-
 type courier struct {
 	Player struct{ Alias string `json:"alias"` } `json:"player"`
 	Match  struct{ ID int `json:"id"` }          `json:"match"`
-}
-
-type Socket interface {
-	Address() net.Addr
-	Send(c *courier) error
-	Receive(c *courier) (*courier, error)
-	Ping() error
-	Close() error
 }
 
 type socket struct {
 	conn *websocket.Conn
 }
 
-func OpenSocket(w http.ResponseWriter, r *http.Request) (Socket, error) {
+func OpenSocket(w http.ResponseWriter, r *http.Request) (*socket, error) {
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
+
 	c, err := upgrader.Upgrade(w, r, nil)
 
 	if c != nil {
