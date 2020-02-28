@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"database/sql"
@@ -7,15 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jmoiron/sqlx"
-
-	"github.com/safe-k/gonnect/internal"
-	"github.com/safe-k/gonnect/pkg"
+	"github.com/safe-k/gonnect/internal/pkg"
 )
-
-type server struct {
-	db *sqlx.DB
-}
 
 func (s *server) handlePlayerConnect() http.HandlerFunc {
 	var (
@@ -30,7 +23,7 @@ func (s *server) handlePlayerConnect() http.HandlerFunc {
 			mr = pkg.MatchRepository{DB: s.db}
 		})
 
-		ws, err := internal.OpenSocket(w, r)
+		ws, err := OpenSocket(w, r)
 		if err != nil {
 			log.Println("WebSocket connection upgrade error:", err)
 			return
