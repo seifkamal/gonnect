@@ -2,16 +2,16 @@ USE `gonnect`;
 
 CREATE TABLE IF NOT EXISTS `player`
 (
-    `id`    INT                        NOT NULL AUTO_INCREMENT,
-    `alias` VARCHAR(64) UNIQUE         NOT NULL,
-    `state` ENUM ('online', 'offline') NOT NULL,
+    `id`    INT                                                  NOT NULL AUTO_INCREMENT,
+    `alias` VARCHAR(64) UNIQUE                                   NOT NULL,
+    `state` ENUM ('offline', 'searching', 'reserved', 'engaged') NOT NULL,
     PRIMARY KEY (`id`)
 );
 
 CREATE TABLE IF NOT EXISTS `match`
 (
-    `id`    INT                        NOT NULL AUTO_INCREMENT,
-    `state` ENUM ('creating', 'ready') NOT NULL,
+    `id`    INT                                 NOT NULL AUTO_INCREMENT,
+    `state` ENUM ('creating', 'ready', 'ended') NOT NULL,
     PRIMARY KEY (`id`)
 );
 

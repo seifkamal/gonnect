@@ -7,20 +7,21 @@ import (
 	"sync"
 	"time"
 
-	"github.com/safe-k/gonnect/internal/pkg"
+	"github.com/safe-k/gonnect/internal/pkg/match"
+	"github.com/safe-k/gonnect/internal/pkg/player"
 )
 
 func (s *server) handlePlayerConnect() http.HandlerFunc {
 	var (
 		once sync.Once
-		pr   pkg.PlayerRepository
-		mr   pkg.MatchRepository
+		pr   player.Repository
+		mr   match.Repository
 	)
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		once.Do(func() {
-			pr = pkg.PlayerRepository{DB: s.db}
-			mr = pkg.MatchRepository{DB: s.db}
+			pr = player.Repository{DB: s.db}
+			mr = match.Repository{DB: s.db}
 		})
 
 		ws, err := OpenSocket(w, r)
@@ -60,7 +61,7 @@ func (s *server) handlePlayerConnect() http.HandlerFunc {
 				case sql.ErrNoRows:
 					log.Println("Creating new player:", alias)
 
-					p, err = pr.New(alias)
+					p, err = pr.New(alias, player.Searching)
 					if err != nil {
 						log.Println("Could not create player:", err)
 						errChan <- err
@@ -71,8 +72,8 @@ func (s *server) handlePlayerConnect() http.HandlerFunc {
 					errChan <- err
 					return
 				}
-			} else if p.State != pkg.PlayerOnline {
-				p.State = pkg.PlayerOnline
+			} else if p.State != player.Searching {
+				p.State = player.Searching
 				if err := pr.Save(p); err != nil {
 					log.Println("Could not update player state:", err)
 					errChan <- err
