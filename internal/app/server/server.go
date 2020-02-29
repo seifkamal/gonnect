@@ -3,34 +3,18 @@ package server
 import (
 	"log"
 	"net/http"
-	"os"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
-	"github.com/joho/godotenv"
+
+	"github.com/safe-k/gonnect/internal/pkg/database"
 )
 
 type server struct {
 	db *sqlx.DB
 }
 
-func init() {
-	if err := godotenv.Load(); err != nil {
-		log.Print("No .server file found")
-	}
-}
-
 func Serve() {
-	dbUrl := os.Getenv("DB")
-	if dbUrl == "" {
-		log.Fatalln("DB environment variable not set")
-	}
-
-	DB, err := sqlx.Connect("mysql", dbUrl)
-	if err != nil {
-		log.Fatalln("Could not connect to DB", err)
-	}
-
+	DB := database.New()
 	defer DB.Close()
 
 	s := &server{DB}

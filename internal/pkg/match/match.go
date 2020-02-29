@@ -1,8 +1,7 @@
 package match
 
 import (
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/jmoiron/sqlx"
+	"github.com/safe-k/gonnect/internal/pkg/database"
 )
 
 const (
@@ -12,13 +11,11 @@ const (
 )
 
 type match struct {
-	ID    int    `db:"id"`
-	State string `db:"state"`
+	ID    database.ID `db:"id"`
+	State string      `db:"state"`
 }
 
-type Repository struct {
-	*sqlx.DB
-}
+type Repository database.Repository
 
 func (r *Repository) FindByPlayerAlias(alias string) (*match, error) {
 	// TODO: Find matches in state `creating`

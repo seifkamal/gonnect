@@ -1,8 +1,7 @@
 package player
 
 import (
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/jmoiron/sqlx"
+	"github.com/safe-k/gonnect/internal/pkg/database"
 )
 
 const (
@@ -13,14 +12,12 @@ const (
 )
 
 type player struct {
-	ID    int    `db:"id"`
-	Alias string `db:"alias"`
-	State string `db:"state"`
+	ID    database.ID `db:"id"`
+	Alias string      `db:"alias"`
+	State string      `db:"state"`
 }
 
-type Repository struct {
-	*sqlx.DB
-}
+type Repository database.Repository
 
 func (r *Repository) New(alias string, state string) (*player, error) {
 	res, err := r.Exec(`INSERT INTO player (alias, state) VALUES(?, ?)`, alias, state)
@@ -34,7 +31,7 @@ func (r *Repository) New(alias string, state string) (*player, error) {
 	}
 
 	p := &player{
-		ID:    int(ID),
+		ID:    database.ID(ID),
 		Alias: alias,
 		State: state,
 	}

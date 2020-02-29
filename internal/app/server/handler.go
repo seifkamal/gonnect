@@ -82,7 +82,7 @@ func (s *server) handlePlayerConnect() http.HandlerFunc {
 						}
 					}
 
-					matchChan <- m.ID
+					matchChan <- int(m.ID)
 					return
 				}
 			}
