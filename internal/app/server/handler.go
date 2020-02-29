@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"net/http"
@@ -24,6 +25,9 @@ func (s *server) handlePlayerConnect() http.HandlerFunc {
 			mr = match.Repository{DB: s.db}
 		})
 
+		ctx, cancel := context.WithCancel(r.Context())
+		defer cancel()
+
 		ws, err := OpenSocket(w, r)
 		if err != nil {
 			log.Println("WebSocket connection upgrade error:", err)
@@ -38,74 +42,80 @@ func (s *server) handlePlayerConnect() http.HandlerFunc {
 			return
 		}
 
-		dcChan := make(chan error, 1)
 		go func() {
 			for {
-				if err := ws.Ping(); err != nil {
-					dcChan <- err
+				select {
+				case <-ctx.Done():
+					log.Println("Cancel signal received, aborting websocket ping")
 					return
-				}
+				default:
+					if err := ws.Ping(); err != nil {
+						log.Println("Websocket disconnected prematurely", err)
+						cancel()
+					}
 
-				<-time.After(5 * time.Second)
+					<-time.After(5 * time.Second)
+				}
 			}
 		}()
 
+		alias := cour.Player.Alias
 		matchChan := make(chan int, 1)
-		errChan := make(chan error, 1)
+
 		go func() {
-			alias := cour.Player.Alias
-
-			p, err := pr.FindByAlias(alias)
-			if err != nil {
-				switch err {
-				case sql.ErrNoRows:
-					log.Println("Creating new player:", alias)
-
-					p, err = pr.New(alias, player.Searching)
-					if err != nil {
-						log.Println("Could not create player:", err)
-						errChan <- err
-						return
-					}
-				default:
-					log.Println("Error finding player:", err)
-					errChan <- err
+			for {
+				select {
+				case <-ctx.Done():
+					log.Println("Cancel signal received, aborting match check")
 					return
-				}
-			} else if p.State != player.Searching {
-				p.State = player.Searching
-				if err := pr.Save(p); err != nil {
-					log.Println("Could not update player state:", err)
-					errChan <- err
+				default:
+					m, err := mr.FindByPlayerAlias(alias)
+					if err != nil {
+						switch err {
+						case sql.ErrNoRows:
+							// Interval can be customisable
+							<-time.After(2 * time.Second)
+							continue
+						default:
+							log.Println("Could not fetch match data", err)
+							cancel()
+						}
+					}
+
+					matchChan <- m.ID
 					return
 				}
 			}
+		}()
 
-			log.Println("Checking player state")
-			for {
-				m, err := mr.FindByPlayerAlias(alias)
+		go func() {
+			select {
+			case <-ctx.Done():
+				log.Println("Cancel signal received, aborting player update")
+				return
+			default:
+				_, err := pr.FindByAlias(alias)
 				if err != nil {
 					switch err {
 					case sql.ErrNoRows:
-						// Interval can be customisable
-						<-time.After(2 * time.Second)
-						continue
+						log.Println("Creating new player:", alias)
+
+						_, err = pr.New(alias, player.Searching)
+						if err != nil {
+							log.Println("Could not create player", err)
+							cancel()
+						}
 					default:
-						errChan <- err
-						return
+						log.Println("Could not fetch player data", err)
+						cancel()
 					}
 				}
-
-				matchChan <- m.ID
-				return
 			}
 		}()
 
 		select {
-		case err := <-dcChan:
-			log.Panicln("User disconnected prematurely:", err)
-		case err := <-errChan:
-			log.Println("Could not find match for player:", err)
+		case <-ctx.Done():
+			log.Println("Cancel signal received, aborting request")
 		case matchID := <-matchChan:
 			log.Println("Found match for player:", matchID)
 
