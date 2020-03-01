@@ -1,26 +1,29 @@
 package player
 
 import (
-	"github.com/safe-k/gonnect/internal/pkg/database"
+	"strconv"
+
+	"github.com/jmoiron/sqlx"
 )
 
 const (
-	Offline   = "offline"
+	Away      = "away"
 	Searching = "searching"
 	Reserved  = "reserved"
-	Engaged   = "engaged"
 )
 
 type player struct {
-	ID    database.ID `db:"id"`
-	Alias string      `db:"alias"`
-	State string      `db:"state"`
+	ID    int64  `db:"id"`
+	Alias string `db:"alias"`
+	State string `db:"state"`
 }
 
-type Repository database.Repository
+type Repository struct {
+	*sqlx.DB
+}
 
 func (r *Repository) New(alias string, state string) (*player, error) {
-	res, err := r.Exec(`INSERT INTO player (alias, state) VALUES(?, ?)`, alias, state)
+	res, err := r.Exec(`INSERT INTO player (alias, state) VALUES(?, ?);`, alias, state)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +34,7 @@ func (r *Repository) New(alias string, state string) (*player, error) {
 	}
 
 	p := &player{
-		ID:    database.ID(ID),
+		ID:    ID,
 		Alias: alias,
 		State: state,
 	}
@@ -40,25 +43,40 @@ func (r *Repository) New(alias string, state string) (*player, error) {
 }
 
 func (r *Repository) Save(p *player) error {
-	_, err := r.NamedExec(`UPDATE player SET state=:state WHERE alias=:alias`, p)
+	_, err := r.NamedExec(`UPDATE player SET state=:state WHERE alias=:alias;`, p)
 
+	return err
+}
+
+func (r *Repository) Reserve(pp []player) error {
+	var ppID []string
+	for _, p := range pp {
+		ppID = append(ppID, strconv.FormatInt(p.ID, 10))
+	}
+
+	query, args, err := sqlx.In(`UPDATE player SET state=? WHERE id IN (?);`, Reserved, ppID)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.Query(r.Rebind(query), args...)
 	return err
 }
 
 func (r *Repository) FindByAlias(alias string) (*player, error) {
 	p := &player{}
-	if err := r.Get(p, `SELECT * FROM player WHERE alias=?`, alias); err != nil {
+	if err := r.Get(p, `SELECT * FROM player WHERE alias=?;`, alias); err != nil {
 		return nil, err
 	}
 
 	return p, nil
 }
 
-func (r *Repository) FindAllSearching() (*[]player, error) {
+func (r *Repository) FindAllSearching() ([]player, error) {
 	pp := &[]player{}
-	if err := r.Select(pp, `SELECT * FROM player WHERE state=?`, Searching); err != nil {
+	if err := r.Select(pp, `SELECT * FROM player WHERE state=?;`, Searching); err != nil {
 		return nil, err
 	}
 
-	return pp, nil
+	return *pp, nil
 }

@@ -9,11 +9,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type ID int64
-type Repository struct {
-	*sqlx.DB
-}
-
 func New() *sqlx.DB {
 	if err := godotenv.Load(); err != nil {
 		log.Print("No .server file found")
