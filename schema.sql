@@ -1,10 +1,13 @@
+DROP DATABASE IF EXISTS `gonnect`;
+CREATE DATABASE `gonnect`;
+
 USE `gonnect`;
 
 CREATE TABLE IF NOT EXISTS `player`
 (
-    `id`    INT                                                  NOT NULL AUTO_INCREMENT,
-    `alias` VARCHAR(64) UNIQUE                                   NOT NULL,
-    `state` ENUM ('offline', 'searching', 'reserved', 'engaged') NOT NULL,
+    `id`    INT                                    NOT NULL AUTO_INCREMENT,
+    `alias` VARCHAR(64) UNIQUE                     NOT NULL,
+    `state` ENUM ('away', 'searching', 'reserved') NOT NULL,
     PRIMARY KEY (`id`)
 );
 
