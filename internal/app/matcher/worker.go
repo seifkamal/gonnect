@@ -1,27 +1,29 @@
 package matcher
 
 import (
-	"database/sql"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/safe-k/gonnect/internal/pkg/database"
-	"github.com/safe-k/gonnect/internal/pkg/match"
-	"github.com/safe-k/gonnect/internal/pkg/player"
+	"github.com/gobuffalo/pop"
+
+	"github.com/safe-k/gonnect/internal/domain"
 )
 
 func Work(bch int) {
-	db := database.New()
+	db, err := pop.Connect("development")
+	if err != nil {
+		log.Fatalln("Could not connect to DB", err)
+	}
 	defer db.Close()
 
-	pr := player.Repository{DB: db}
-	mr := match.Repository{DB: db}
-
 	for {
-		pp, err := pr.FindAllSearching()
-		if err != nil && err != sql.ErrNoRows {
-			log.Fatalln("Could not find players")
+		var pp domain.Players
+		if err := db.Where("state = ?", domain.PlayerSearching).All(&pp); err != nil {
+			if !strings.Contains(err.Error(), "no rows") {
+				log.Fatalln("Could not find players")
+			}
 		}
 
 		mc := len(pp) / bch
@@ -44,30 +46,20 @@ func Work(bch int) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				m, err := mr.Create()
-				if err != nil {
+
+				for i := range mpp {
+					mpp[i].State = domain.PlayerUnavailable
+				}
+				if err := db.Update(mpp); err != nil {
+					log.Fatalln("Could not reserve match players", err)
+				}
+
+				m := &domain.Match{
+					State:   domain.MatchReady,
+					Players: mpp,
+				}
+				if err := db.Save(m); err != nil {
 					log.Fatalln("Could not create match", err)
-				}
-
-				log.Println("Reserving players")
-				if err := pr.Reserve(mpp); err != nil {
-					log.Fatalln("Could not reserve players", err)
-				}
-
-				var mppID []int64
-				for _, p := range mpp {
-					mppID = append(mppID, p.ID)
-				}
-
-				log.Println("Linking players to match")
-				if err := mr.LinkPlayers(m, mppID); err != nil {
-					log.Fatalln("Could not link players to match", err)
-				}
-
-				log.Println("Updating match state")
-				m.State = match.Ready
-				if err := mr.Save(m); err != nil {
-					log.Fatalln("Could not update match state", err)
 				}
 			}()
 
@@ -76,5 +68,6 @@ func Work(bch int) {
 		}
 
 		wg.Wait()
+		break
 	}
 }

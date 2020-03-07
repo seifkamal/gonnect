@@ -1,0 +1,6 @@
+development:
+  dialect: mysql
+  database: gonnect
+  user: root
+  host: gonnect_db_1
+  pool: 5

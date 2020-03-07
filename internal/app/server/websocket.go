@@ -6,11 +6,13 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
+
+	"github.com/safe-k/gonnect/internal/domain"
 )
 
 type courier struct {
-	Player struct{ Alias string `json:"alias"` } `json:"player"`
-	Match  struct{ ID int `json:"id"` }          `json:"match"`
+	Player domain.Player `json:"player"`
+	Match  domain.Match  `json:"match"`
 }
 
 type socket struct {

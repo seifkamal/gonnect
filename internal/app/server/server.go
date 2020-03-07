@@ -4,21 +4,22 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gobuffalo/pop"
 	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
-
-	"github.com/safe-k/gonnect/internal/pkg/database"
 )
 
 type server struct {
-	db *sqlx.DB
+	db *pop.Connection
 }
 
 func Serve() {
-	DB := database.New()
-	defer DB.Close()
+	db, err := pop.Connect("development")
+	if err != nil {
+		log.Fatalln("Could not connect to DB", err)
+	}
+	defer db.Close()
 
-	s := &server{DB}
+	s := &server{db}
 
 	r := mux.NewRouter()
 	r.HandleFunc("/player/connect", s.handlePlayerConnect())

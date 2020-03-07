@@ -2,30 +2,17 @@ package server
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
-	"sync"
+	"strings"
 	"time"
 
-	"github.com/safe-k/gonnect/internal/pkg/match"
-	"github.com/safe-k/gonnect/internal/pkg/player"
+	"github.com/safe-k/gonnect/internal/domain"
 )
 
 func (s *server) handlePlayerConnect() http.HandlerFunc {
-	var (
-		once sync.Once
-		pr   player.Repository
-		mr   match.Repository
-	)
-
 	return func(w http.ResponseWriter, r *http.Request) {
-		once.Do(func() {
-			pr = player.Repository{DB: s.db}
-			mr = match.Repository{DB: s.db}
-		})
-
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 
@@ -70,20 +57,26 @@ func (s *server) handlePlayerConnect() http.HandlerFunc {
 					log.Println("Cancel signal received, aborting match check")
 					return
 				default:
-					m, err := mr.FindByPlayerAlias(alias)
-					if err != nil {
-						switch err {
-						case sql.ErrNoRows:
-							// Interval can be customisable
-							<-time.After(2 * time.Second)
-							continue
-						default:
+					q := s.db.Q().
+						LeftJoin("matches_players", "matches_players.match_id=matches.id").
+						LeftJoin("players", "players.id=matches_players.player_id").
+						Where("players.alias = ?", alias).
+						Where("matches.state <> ?", domain.MatchEnded)
+
+					m := &domain.Match{}
+					if err := q.First(m); err != nil {
+						if !strings.Contains(err.Error(), "no rows") {
 							log.Println("Could not fetch match data", err)
 							cancel()
+							return
 						}
+
+						// Interval can be customisable
+						<-time.After(2 * time.Second)
+						continue
 					}
 
-					matchChan <- int(m.ID)
+					matchChan <- m.ID
 					return
 				}
 			}
@@ -95,21 +88,22 @@ func (s *server) handlePlayerConnect() http.HandlerFunc {
 				log.Println("Cancel signal received, aborting player update")
 				return
 			default:
-				_, err := pr.FindByAlias(alias)
-				if err != nil {
-					switch err {
-					case sql.ErrNoRows:
-						log.Println("Creating new player:", alias)
-
-						_, err = pr.New(alias, player.Searching)
-						if err != nil {
-							log.Println("Could not create player", err)
-							cancel()
-						}
-					default:
+				p := &domain.Player{}
+				if err := s.db.Where("alias = ?", alias).First(p); err != nil {
+					if !strings.Contains(err.Error(), "no rows") {
 						log.Println("Could not fetch player data", err)
 						cancel()
+						return
 					}
+
+					log.Println("Creating new player:", alias)
+					p.Alias = alias
+				}
+
+				p.State = domain.PlayerSearching
+				if err:= s.db.Save(p); err != nil {
+					log.Println("Could not create player", err)
+					cancel()
 				}
 			}
 		}()
@@ -131,16 +125,7 @@ func (s *server) handlePlayerConnect() http.HandlerFunc {
 }
 
 func (s *server) handleGetReadyMatch() http.HandlerFunc {
-	var (
-		once sync.Once
-		mr   match.Repository
-	)
-
 	return func(w http.ResponseWriter, r *http.Request) {
-		once.Do(func() {
-			mr = match.Repository{DB: s.db}
-		})
-
 		st := r.URL.Query().Get("state")
 		if st == "" {
 			w.WriteHeader(http.StatusBadRequest)
@@ -153,22 +138,25 @@ func (s *server) handleGetReadyMatch() http.HandlerFunc {
 			return
 		}
 
-		mm, err := mr.Find(st)
-		if err != nil {
+		mm := &[]domain.Match{}
+		if err := s.db.Where("state = ?", st).All(mm); err != nil {
 			log.Println("Could not find ready matches", err)
 			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 
 		mmBytes, err := json.Marshal(mm)
 		if err != nil {
 			log.Println("Could not JSON encode match data", err)
 			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 
 		_, err = w.Write(mmBytes)
 		if err != nil {
 			log.Println("Could not send match data response", err)
 			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 	}
 }
