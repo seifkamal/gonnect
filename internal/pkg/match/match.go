@@ -33,6 +33,15 @@ func (r *Repository) FindByPlayerAlias(alias string) (*match, error) {
 	return m, nil
 }
 
+func (r *Repository) Find(state string) (*[]match, error) {
+	mm := &[]match{}
+	if err := r.Select(mm, "SELECT * FROM `match` WHERE state=?", state); err != nil {
+		return nil, err
+	}
+
+	return mm, nil
+}
+
 func (r *Repository) Create() (*match, error) {
 	res, err := r.Exec("INSERT INTO `match` (state) VALUES (?);", Creating)
 	if err != nil {

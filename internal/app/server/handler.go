@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"log"
 	"net/http"
 	"sync"
@@ -125,6 +126,49 @@ func (s *server) handlePlayerConnect() http.HandlerFunc {
 			}
 
 			return
+		}
+	}
+}
+
+func (s *server) handleGetReadyMatch() http.HandlerFunc {
+	var (
+		once sync.Once
+		mr   match.Repository
+	)
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		once.Do(func() {
+			mr = match.Repository{DB: s.db}
+		})
+
+		st := r.URL.Query().Get("state")
+		if st == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			_, err := w.Write([]byte("'state' query parameter required"))
+			if err != nil {
+				log.Println("Could not send error response", err)
+				return
+			}
+
+			return
+		}
+
+		mm, err := mr.Find(st)
+		if err != nil {
+			log.Println("Could not find ready matches", err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		mmBytes, err := json.Marshal(mm)
+		if err != nil {
+			log.Println("Could not JSON encode match data", err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		_, err = w.Write(mmBytes)
+		if err != nil {
+			log.Println("Could not send match data response", err)
+			w.WriteHeader(http.StatusInternalServerError)
 		}
 	}
 }

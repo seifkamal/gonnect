@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/safe-k/gonnect/internal/pkg/database"
@@ -19,7 +20,10 @@ func Serve() {
 
 	s := &server{DB}
 
-	http.Handle("/player/connect", s.handlePlayerConnect())
+	r := mux.NewRouter()
+	r.HandleFunc("/player/connect", s.handlePlayerConnect())
+	r.HandleFunc("/matches", s.handleGetReadyMatch()).Methods("GET")
+	http.Handle("/", r)
 
 	defer func() {
 		if err := recover(); err != nil {
