@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/go-chi/chi"
 	"github.com/gobuffalo/pop"
-	"github.com/gorilla/mux"
 )
 
 type server struct {
@@ -21,10 +21,9 @@ func Serve() {
 
 	s := &server{db}
 
-	r := mux.NewRouter()
-	r.HandleFunc("/player/connect", s.handlePlayerConnect())
-	r.HandleFunc("/match/all", s.handleGetReadyMatch()).Methods("GET")
-	http.Handle("/", r)
+	r := chi.NewRouter()
+	r.Get("/player/connect", s.handlePlayerConnect())
+	r.Get("/match/all", s.handleGetReadyMatch())
 
 	defer func() {
 		if err := recover(); err != nil {
@@ -35,5 +34,5 @@ func Serve() {
 
 	const port = ":5000"
 	log.Println("Listening on port", port)
-	log.Fatal(http.ListenAndServe(port, nil))
+	log.Fatal(http.ListenAndServe(port, r))
 }
