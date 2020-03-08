@@ -46,20 +46,17 @@ func Work(bch int) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-
-				for i := range mpp {
-					mpp[i].State = domain.PlayerUnavailable
-				}
-				if err := db.Update(mpp); err != nil {
-					log.Fatalln("Could not reserve match players", err)
-				}
-
 				m := &domain.Match{
 					State:   domain.MatchReady,
 					Players: mpp,
 				}
+
 				if err := db.Save(m); err != nil {
 					log.Fatalln("Could not create match", err)
+				}
+
+				if err := db.Update(mpp.Reserve()); err != nil {
+					log.Fatalln("Could not reserve match players", err)
 				}
 			}()
 

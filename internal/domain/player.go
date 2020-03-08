@@ -16,3 +16,11 @@ type Player struct {
 }
 
 type Players []Player
+
+func (pp Players) Reserve() Players {
+	for i := range pp {
+		pp[i].State = PlayerUnavailable
+	}
+
+	return pp
+}
