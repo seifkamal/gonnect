@@ -14,7 +14,7 @@ import (
 	"github.com/safe-k/gonnect/internal/domain"
 )
 
-func (s *server) handlePlayerConnect() http.HandlerFunc {
+func (s *server) connectPlayer() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
@@ -127,7 +127,7 @@ func (s *server) handlePlayerConnect() http.HandlerFunc {
 	}
 }
 
-func (s *server) handleGetReadyMatch() http.HandlerFunc {
+func (s *server) getAllMatches() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		st := r.URL.Query().Get("state")
 		if st == "" {
@@ -164,7 +164,7 @@ func (s *server) handleGetReadyMatch() http.HandlerFunc {
 	}
 }
 
-func (s *server) handleGetMatch() http.HandlerFunc {
+func (s *server) getMatch() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mID, err := strconv.Atoi(chi.URLParam(r, "matchId"))
 		if err != nil {
@@ -200,7 +200,7 @@ func (s *server) handleGetMatch() http.HandlerFunc {
 	}
 }
 
-func (s *server) handleEndMatch() http.HandlerFunc {
+func (s *server) endMatch() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mID, err := strconv.Atoi(chi.URLParam(r, "matchId"))
 		if err != nil {

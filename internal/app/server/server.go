@@ -22,12 +22,12 @@ func Serve() {
 	s := &server{db}
 
 	r := chi.NewRouter()
-	r.Get("/player/connect", s.handlePlayerConnect())
+	r.Get("/player/connect", s.connectPlayer())
 	r.Route("/match", func(r chi.Router) {
-		r.Get("/all", s.handleGetReadyMatch())
+		r.Get("/all", s.getAllMatches())
 		r.Route("/{matchId}", func(r chi.Router) {
-			r.Get("/", s.handleGetMatch())
-			r.Post("/end", s.handleEndMatch())
+			r.Get("/", s.getMatch())
+			r.Post("/end", s.endMatch())
 		})
 	})
 
