@@ -27,6 +27,7 @@ func Serve() {
 		r.Get("/all", s.handleGetReadyMatch())
 		r.Route("/{matchId}", func(r chi.Router) {
 			r.Get("/", s.handleGetMatch())
+			r.Post("/end", s.handleEndMatch())
 		})
 	})
 

@@ -199,3 +199,23 @@ func (s *server) handleGetMatch() http.HandlerFunc {
 		}
 	}
 }
+
+func (s *server) handleEndMatch() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		mID, err := strconv.Atoi(chi.URLParam(r, "matchId"))
+		if err != nil {
+			log.Println("Could not parse match ID param:", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		m := &domain.Match{ID: mID, State: domain.MatchEnded}
+		if err := s.db.Update(m); err != nil {
+			log.Println("Could not update match:", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
