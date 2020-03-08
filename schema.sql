@@ -30,6 +30,6 @@ CREATE TABLE IF NOT EXISTS `matches_players`
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    FOREIGN KEY (`match_id`) REFERENCES `matches` (`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE CASCADE
+    FOREIGN KEY (`match_id`) REFERENCES `matches` (`id`) ON DELETE SET NULL,
+    FOREIGN KEY (`player_id`) REFERENCES `players` (`id`) ON DELETE SET NULL
 );
