@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/go-chi/chi"
 
 	"github.com/safe-k/gonnect/internal/domain"
 )
@@ -101,7 +104,7 @@ func (s *server) handlePlayerConnect() http.HandlerFunc {
 				}
 
 				p.State = domain.PlayerSearching
-				if err:= s.db.Save(p); err != nil {
+				if err := s.db.Save(p); err != nil {
 					log.Println("Could not create player", err)
 					cancel()
 				}
@@ -155,6 +158,42 @@ func (s *server) handleGetReadyMatch() http.HandlerFunc {
 		_, err = w.Write(mmBytes)
 		if err != nil {
 			log.Println("Could not send match data response", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+func (s *server) handleGetMatch() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		mID, err := strconv.Atoi(chi.URLParam(r, "matchId"))
+		if err != nil {
+			log.Println("Could not parse match ID param:", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		m := &domain.Match{}
+		if err := s.db.Find(m, mID); err != nil {
+			if strings.Contains(err.Error(), "no rows") {
+				w.WriteHeader(http.StatusNotFound)
+			} else {
+				log.Println("Could not find match:", err)
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+			return
+		}
+
+		res, err := json.Marshal(m)
+		if err != nil {
+			log.Println("Could not JSON marshall match data:", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		_, err = w.Write(res)
+		if err != nil {
+			log.Println("Could not send match data:", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

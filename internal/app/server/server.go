@@ -23,7 +23,12 @@ func Serve() {
 
 	r := chi.NewRouter()
 	r.Get("/player/connect", s.handlePlayerConnect())
-	r.Get("/match/all", s.handleGetReadyMatch())
+	r.Route("/match", func(r chi.Router) {
+		r.Get("/all", s.handleGetReadyMatch())
+		r.Route("/{matchId}", func(r chi.Router) {
+			r.Get("/", s.handleGetMatch())
+		})
+	})
 
 	defer func() {
 		if err := recover(); err != nil {
