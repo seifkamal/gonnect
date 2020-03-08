@@ -5,21 +5,17 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"github.com/gobuffalo/pop"
+
+	"github.com/safe-k/gonnect/internal"
 )
 
-type server struct {
-	db *pop.Connection
-}
+type server internal.Server
 
 func Serve() {
-	db, err := pop.Connect("development")
-	if err != nil {
-		log.Fatalln("Could not connect to DB", err)
-	}
+	db := internal.DB()
 	defer db.Close()
 
-	s := &server{db}
+	s := &server{DB: db}
 
 	r := chi.NewRouter()
 	r.Get("/player/connect", s.connectPlayer())

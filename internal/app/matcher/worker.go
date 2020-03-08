@@ -6,16 +6,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gobuffalo/pop"
-
+	"github.com/safe-k/gonnect/internal"
 	"github.com/safe-k/gonnect/internal/domain"
 )
 
 func Work(bch int) {
-	db, err := pop.Connect("development")
-	if err != nil {
-		log.Fatalln("Could not connect to DB", err)
-	}
+	db := internal.DB()
 	defer db.Close()
 
 	for {

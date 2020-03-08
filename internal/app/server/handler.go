@@ -60,7 +60,7 @@ func (s *server) connectPlayer() http.HandlerFunc {
 					log.Println("Cancel signal received, aborting match check")
 					return
 				default:
-					q := s.db.Q().
+					q := s.DB.Q().
 						LeftJoin("matches_players", "matches_players.match_id=matches.id").
 						LeftJoin("players", "players.id=matches_players.player_id").
 						Where("players.alias = ?", alias).
@@ -86,7 +86,7 @@ func (s *server) connectPlayer() http.HandlerFunc {
 		}()
 
 		p := &domain.Player{}
-		if err := s.db.Where("alias = ?", alias).First(p); err != nil {
+		if err := s.DB.Where("alias = ?", alias).First(p); err != nil {
 			if !strings.Contains(err.Error(), "no rows") {
 				log.Println("Could not fetch player data", err)
 				cancel()
@@ -98,7 +98,7 @@ func (s *server) connectPlayer() http.HandlerFunc {
 		}
 
 		p.State = domain.PlayerSearching
-		if err := s.db.Save(p); err != nil {
+		if err := s.DB.Save(p); err != nil {
 			log.Println("Could not update player", err)
 			cancel()
 		}
@@ -108,7 +108,7 @@ func (s *server) connectPlayer() http.HandlerFunc {
 			log.Println("Cancel signal received, aborting request")
 
 			p.State = domain.PlayerUnavailable
-			if err := s.db.Save(p); err != nil {
+			if err := s.DB.Save(p); err != nil {
 				log.Println("Could not update player", err)
 			}
 		case matchID := <-matchChan:
@@ -139,7 +139,7 @@ func (s *server) getAllMatches() http.HandlerFunc {
 		}
 
 		mm := &[]domain.Match{}
-		if err := s.db.Where("state = ?", st).All(mm); err != nil {
+		if err := s.DB.Where("state = ?", st).All(mm); err != nil {
 			log.Println("Could not find ready matches", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -171,7 +171,7 @@ func (s *server) getMatch() http.HandlerFunc {
 		}
 
 		m := &domain.Match{}
-		if err := s.db.Find(m, mID); err != nil {
+		if err := s.DB.Find(m, mID); err != nil {
 			if strings.Contains(err.Error(), "no rows") {
 				w.WriteHeader(http.StatusNotFound)
 			} else {
@@ -207,7 +207,7 @@ func (s *server) endMatch() http.HandlerFunc {
 		}
 
 		m := &domain.Match{ID: mID, State: domain.MatchEnded}
-		if err := s.db.Update(m); err != nil {
+		if err := s.DB.Update(m); err != nil {
 			log.Println("Could not update match:", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
