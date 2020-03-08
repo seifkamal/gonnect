@@ -85,35 +85,32 @@ func (s *server) connectPlayer() http.HandlerFunc {
 			}
 		}()
 
-		go func() {
-			select {
-			case <-ctx.Done():
-				log.Println("Cancel signal received, aborting player update")
+		p := &domain.Player{}
+		if err := s.db.Where("alias = ?", alias).First(p); err != nil {
+			if !strings.Contains(err.Error(), "no rows") {
+				log.Println("Could not fetch player data", err)
+				cancel()
 				return
-			default:
-				p := &domain.Player{}
-				if err := s.db.Where("alias = ?", alias).First(p); err != nil {
-					if !strings.Contains(err.Error(), "no rows") {
-						log.Println("Could not fetch player data", err)
-						cancel()
-						return
-					}
-
-					log.Println("Creating new player:", alias)
-					p.Alias = alias
-				}
-
-				p.State = domain.PlayerSearching
-				if err := s.db.Save(p); err != nil {
-					log.Println("Could not create player", err)
-					cancel()
-				}
 			}
-		}()
+
+			log.Println("Creating new player:", alias)
+			p.Alias = alias
+		}
+
+		p.State = domain.PlayerSearching
+		if err := s.db.Save(p); err != nil {
+			log.Println("Could not update player", err)
+			cancel()
+		}
 
 		select {
 		case <-ctx.Done():
 			log.Println("Cancel signal received, aborting request")
+
+			p.State = domain.PlayerUnavailable
+			if err := s.db.Save(p); err != nil {
+				log.Println("Could not update player", err)
+			}
 		case matchID := <-matchChan:
 			log.Println("Found match for player:", matchID)
 
