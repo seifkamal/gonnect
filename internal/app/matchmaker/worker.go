@@ -1,4 +1,4 @@
-package matcher
+package matchmaker
 
 import (
 	"log"
@@ -6,17 +6,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/safe-k/gonnect/internal"
+	"github.com/safe-k/gonnect/internal/app"
 	"github.com/safe-k/gonnect/internal/domain"
 )
 
-func Work(bch int) {
-	db := internal.DB()
-	defer db.Close()
+type Worker app.Actor
 
+func (w *Worker) Match(bch int) {
 	for {
 		var pp domain.Players
-		if err := db.Where("state = ?", domain.PlayerSearching).All(&pp); err != nil {
+		if err := w.DB.Where("state = ?", domain.PlayerSearching).All(&pp); err != nil {
 			if !strings.Contains(err.Error(), "no rows") {
 				log.Fatalln("Could not find players")
 			}
@@ -42,18 +41,7 @@ func Work(bch int) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				m := &domain.Match{
-					State:   domain.MatchReady,
-					Players: mpp,
-				}
-
-				if err := db.Save(m); err != nil {
-					log.Fatalln("Could not create match", err)
-				}
-
-				if err := db.Update(mpp.Reserve()); err != nil {
-					log.Fatalln("Could not reserve match players", err)
-				}
+				w.createMatch(mpp)
 			}()
 
 			s += bch
@@ -61,6 +49,20 @@ func Work(bch int) {
 		}
 
 		wg.Wait()
-		break
+	}
+}
+
+func (w *Worker) createMatch(mpp domain.Players) {
+	m := &domain.Match{
+		State:   domain.MatchReady,
+		Players: mpp,
+	}
+
+	if err := w.DB.Save(m); err != nil {
+		log.Fatalln("Could not create match", err)
+	}
+
+	if err := w.DB.Update(mpp.Reserve()); err != nil {
+		log.Fatalln("Could not reserve match players", err)
 	}
 }

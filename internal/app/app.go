@@ -1,4 +1,4 @@
-package internal
+package app
 
 import (
 	"log"
@@ -6,7 +6,7 @@ import (
 	"github.com/gobuffalo/pop"
 )
 
-type Server struct {
+type Actor struct {
 	DB *pop.Connection
 }
 
