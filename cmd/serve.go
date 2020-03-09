@@ -12,7 +12,10 @@ import (
 func init() {
 	serveCmd := &cobra.Command{
 		Use:       "serve [ROUTER]",
-		Short:     "Starts an HTTP API server",
+		Short:     "Starts a REST API server",
+		Long:      "Starts a REST API server with the specified router",
+		Example:   "gonnect serve player",
+		Version:   "1.0.0",
 		Args:      cobra.ExactValidArgs(1),
 		ValidArgs: []string{"match", "player"},
 		Run: func(cmd *cobra.Command, args []string) {

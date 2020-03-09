@@ -9,8 +9,11 @@ import (
 
 func init() {
 	matchCmd := &cobra.Command{
-		Use:   "match",
-		Short: "Runs a matchmaking worker",
+		Use:     "match",
+		Short:   "Runs a matchmaking worker",
+		Long:    "Runs a matchmaking worker that will create a new match whenever enough players are searching",
+		Example: "gonnect match --batch 5",
+		Version: "1.0.0",
 		Run: func(cmd *cobra.Command, args []string) {
 			bch, err := cmd.Flags().GetInt("batch")
 			if err != nil {
@@ -26,6 +29,6 @@ func init() {
 		},
 	}
 
-	matchCmd.Flags().Int("batch", 10, "The player count per match")
+	matchCmd.Flags().Int("batch", 10, "Number of players per match")
 	rootCmd.AddCommand(matchCmd)
 }
