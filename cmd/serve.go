@@ -10,14 +10,19 @@ import (
 )
 
 func init() {
+	validArgs := []string{"match", "player"}
 	serveCmd := &cobra.Command{
-		Use:       "serve [ROUTER]",
-		Short:     "Starts a REST API server",
-		Long:      "Starts a REST API server with the specified router",
+		Use:   "serve [ROUTER]",
+		Short: "Starts an API server",
+		Long: `Starts an API server with the specified router.
+Currently the available routers are:
+- match [for use of the game server to retrieve match information]
+- player [for use by the player clients to search for a match]
+`,
 		Example:   "gonnect serve player",
 		Version:   "1.0.0",
 		Args:      cobra.ExactValidArgs(1),
-		ValidArgs: []string{"match", "player"},
+		ValidArgs: validArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			DB := app.DB()
 			defer DB.Close()
