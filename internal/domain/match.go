@@ -3,8 +3,8 @@ package domain
 import "time"
 
 const (
-	MatchReady    = "ready"
-	MatchEnded    = "ended"
+	MatchReady = "ready"
+	MatchEnded = "ended"
 )
 
 type Match struct {
@@ -12,5 +12,5 @@ type Match struct {
 	State     string    `json:"state" db:"state"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
-	Players   Players   `many_to_many:"matches_players" db:"-"`
+	Players   Players   `json:"players,omitempty" many_to_many:"matches_players" db:"-"`
 }
