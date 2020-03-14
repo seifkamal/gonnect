@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi"
 
 	"github.com/safe-k/gonnect/internal/app"
+	"github.com/safe-k/gonnect/internal/app/server"
 	"github.com/safe-k/gonnect/internal/domain"
 )
 
@@ -25,7 +26,7 @@ func (h *Handler) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
-	ws, err := OpenSocket(w, r)
+	ws, err := server.WebSocket(w, r)
 	if err != nil {
 		log.Println("WebSocket connection upgrade error:", err)
 		return
@@ -33,8 +34,8 @@ func (h *Handler) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 
 	defer ws.Close()
 
-	cour, err := ws.Receive(nil)
-	if err != nil {
+	p := &domain.Player{}
+	if err := ws.ReceiveJSON(p); err != nil {
 		log.Println("WebSocket read error:", err)
 		return
 	}
@@ -56,8 +57,7 @@ func (h *Handler) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	alias := cour.Player.Alias
-	matchChan := make(chan int, 1)
+	matchChan := make(chan domain.Match, 1)
 
 	go func() {
 		for {
@@ -69,7 +69,7 @@ func (h *Handler) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 				q := h.DB.Q().
 					LeftJoin("matches_players", "matches_players.match_id=matches.id").
 					LeftJoin("players", "players.id=matches_players.player_id").
-					Where("players.alias = ?", alias).
+					Where("players.alias = ?", p.Alias).
 					Where("matches.state <> ?", domain.MatchEnded)
 
 				m := &domain.Match{}
@@ -85,22 +85,20 @@ func (h *Handler) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 
-				matchChan <- m.ID
+				matchChan <- *m
 				return
 			}
 		}
 	}()
 
-	p := &domain.Player{}
-	if err := h.DB.Where("alias = ?", alias).First(p); err != nil {
+	if err := h.DB.Where("alias = ?", p.Alias).First(p); err != nil {
 		if !strings.Contains(err.Error(), "no rows") {
 			log.Println("Could not fetch player data", err)
 			cancel()
 			return
 		}
 
-		log.Println("Creating new player:", alias)
-		p.Alias = alias
+		log.Println("Creating new player:", p.Alias)
 	}
 
 	p.State = domain.PlayerSearching
@@ -117,11 +115,10 @@ func (h *Handler) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 		if err := h.DB.Save(p); err != nil {
 			log.Println("Could not update player", err)
 		}
-	case matchID := <-matchChan:
-		log.Println("Found match for player:", matchID)
+	case m := <-matchChan:
+		log.Println("Found match for player:", m.ID)
 
-		cour.Match.ID = matchID
-		if err := ws.Send(cour); err != nil {
+		if err := ws.SendJSON(m); err != nil {
 			log.Println("WebSocket write error:", err)
 		}
 
