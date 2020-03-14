@@ -14,3 +14,5 @@ type Match struct {
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 	Players   Players   `json:"players,omitempty" many_to_many:"matches_players" db:"-"`
 }
+
+type Matches []Match

@@ -9,12 +9,18 @@ import (
 
 	"github.com/go-chi/chi"
 
-	"github.com/safe-k/gonnect/internal/app"
 	"github.com/safe-k/gonnect/internal/app/server"
 	"github.com/safe-k/gonnect/internal/domain"
 )
 
-type Handler app.Actor
+type storage interface {
+	GetActiveMatch(p domain.Player) (*domain.Match, error)
+	SavePlayer(p *domain.Player) error
+}
+
+type Handler struct {
+	Storage storage
+}
 
 func (h *Handler) Router() http.Handler {
 	r := chi.NewRouter()
@@ -34,12 +40,6 @@ func (h *Handler) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 
 	defer ws.Close()
 
-	p := &domain.Player{}
-	if err := ws.ReceiveJSON(p); err != nil {
-		log.Println("WebSocket read error:", err)
-		return
-	}
-
 	go func() {
 		for {
 			select {
@@ -57,8 +57,13 @@ func (h *Handler) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	matchChan := make(chan domain.Match, 1)
+	p := &domain.Player{}
+	if err := ws.ReceiveJSON(p); err != nil {
+		log.Println("WebSocket read error:", err)
+		return
+	}
 
+	matchChan := make(chan *domain.Match, 1)
 	go func() {
 		for {
 			select {
@@ -66,14 +71,8 @@ func (h *Handler) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 				log.Println("Cancel signal received, aborting match check")
 				return
 			default:
-				q := h.DB.Q().
-					LeftJoin("matches_players", "matches_players.match_id=matches.id").
-					LeftJoin("players", "players.id=matches_players.player_id").
-					Where("players.alias = ?", p.Alias).
-					Where("matches.state <> ?", domain.MatchEnded)
-
-				m := &domain.Match{}
-				if err := q.First(m); err != nil {
+				m, err := h.Storage.GetActiveMatch(*p)
+				if err != nil {
 					if !strings.Contains(err.Error(), "no rows") {
 						log.Println("Could not fetch match data", err)
 						cancel()
@@ -85,24 +84,14 @@ func (h *Handler) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 
-				matchChan <- *m
+				matchChan <- m
 				return
 			}
 		}
 	}()
 
-	if err := h.DB.Where("alias = ?", p.Alias).First(p); err != nil {
-		if !strings.Contains(err.Error(), "no rows") {
-			log.Println("Could not fetch player data", err)
-			cancel()
-			return
-		}
-
-		log.Println("Creating new player:", p.Alias)
-	}
-
 	p.State = domain.PlayerSearching
-	if err := h.DB.Save(p); err != nil {
+	if err := h.Storage.SavePlayer(p); err != nil {
 		log.Println("Could not update player", err)
 		cancel()
 	}
@@ -112,7 +101,7 @@ func (h *Handler) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 		log.Println("Cancel signal received, aborting request")
 
 		p.State = domain.PlayerUnavailable
-		if err := h.DB.Save(p); err != nil {
+		if err := h.Storage.SavePlayer(p); err != nil {
 			log.Println("Could not update player", err)
 		}
 	case m := <-matchChan:

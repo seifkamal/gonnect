@@ -6,22 +6,29 @@ import (
 	"sync"
 	"time"
 
-	"github.com/safe-k/gonnect/internal/app"
 	"github.com/safe-k/gonnect/internal/domain"
 )
 
-type Worker app.Actor
+type storage interface {
+	GetPlayersSearching() (*domain.Players, error)
+	SaveMatch(match *domain.Match) error
+	SavePlayers(players *domain.Players) error
+}
+
+type Worker struct {
+	Storage storage
+}
 
 func (w *Worker) Match(bch int) {
 	for {
-		var pp domain.Players
-		if err := w.DB.Where("state = ?", domain.PlayerSearching).All(&pp); err != nil {
+		pp, err := w.Storage.GetPlayersSearching()
+		if err != nil {
 			if !strings.Contains(err.Error(), "no rows") {
 				log.Fatalln("Could not find players")
 			}
 		}
 
-		mc := len(pp) / bch
+		mc := len(*pp) / bch
 		if mc == 0 {
 			log.Println("Waiting for more players")
 			<-time.After(2 * time.Second)
@@ -37,7 +44,7 @@ func (w *Worker) Match(bch int) {
 		)
 
 		for c := 1; c <= mc; c++ {
-			mpp := pp[s:e]
+			mpp := (*pp)[s:e]
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -58,11 +65,11 @@ func (w *Worker) createMatch(mpp domain.Players) {
 		Players: mpp,
 	}
 
-	if err := w.DB.Save(m); err != nil {
+	if err := w.Storage.SaveMatch(m); err != nil {
 		log.Fatalln("Could not create match", err)
 	}
 
-	if err := w.DB.Update(mpp.Reserve()); err != nil {
+	if err := w.Storage.SavePlayers(mpp.Reserve()); err != nil {
 		log.Fatalln("Could not reserve match players", err)
 	}
 }

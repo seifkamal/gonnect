@@ -9,11 +9,18 @@ import (
 
 	"github.com/go-chi/chi"
 
-	"github.com/safe-k/gonnect/internal/app"
 	"github.com/safe-k/gonnect/internal/domain"
 )
 
-type Handler app.Actor
+type storage interface {
+	GetMatchesByState(state string) (*domain.Matches, error)
+	GetMatchById(id int) (*domain.Match, error)
+	EndMatch(id int) error
+}
+
+type Handler struct {
+	Storage storage
+}
 
 func (h *Handler) Router() http.Handler {
 	r := chi.NewRouter()
@@ -40,8 +47,8 @@ func (h *Handler) getAllMatches(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mm := &[]domain.Match{}
-	if err := h.DB.Where("state = ?", st).All(mm); err != nil {
+	mm, err := h.Storage.GetMatchesByState(st)
+	if err != nil {
 		log.Println("Could not find ready matches", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -70,8 +77,8 @@ func (h *Handler) getMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m := &domain.Match{}
-	if err := h.DB.Find(m, mID); err != nil {
+	m, err := h.Storage.GetMatchById(mID)
+	if err != nil {
 		if strings.Contains(err.Error(), "no rows") {
 			w.WriteHeader(http.StatusNotFound)
 		} else {
@@ -104,8 +111,8 @@ func (h *Handler) endMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m := &domain.Match{ID: mID, State: domain.MatchEnded}
-	if err := h.DB.Update(m); err != nil {
+	err = h.Storage.EndMatch(mID)
+	if err != nil {
 		log.Println("Could not update match:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
