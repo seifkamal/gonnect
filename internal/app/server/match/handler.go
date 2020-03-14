@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi"
 
+	"github.com/safe-k/gonnect/internal/app/server"
 	"github.com/safe-k/gonnect/internal/domain"
 )
 
@@ -19,6 +20,7 @@ type storage interface {
 }
 
 type Handler struct {
+	server.BasicAuthenticator
 	Storage storage
 }
 
@@ -28,7 +30,7 @@ func (h *Handler) Router() http.Handler {
 		r.Get("/all", h.getAllMatches)
 		r.Route("/{matchId}", func(r chi.Router) {
 			r.Get("/", h.getMatch)
-			r.Post("/end", h.endMatch)
+			r.Post("/end", h.Authenticate(h.endMatch))
 		})
 	})
 	return r

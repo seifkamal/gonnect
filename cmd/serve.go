@@ -30,7 +30,23 @@ Currently the available routers are:
 			var h server.Handler
 			switch args[0] {
 			case "match":
-				h = &match.Handler{Storage: storage}
+				user, err := cmd.Flags().GetString("user")
+				if err != nil {
+					cmd.PrintErr(err)
+					return
+				}
+
+				pass, err := cmd.Flags().GetString("pass")
+				if err != nil {
+					cmd.PrintErr(err)
+					return
+				}
+
+				auth := server.NewBasicAuthenticator(user, pass)
+				h = &match.Handler{
+					BasicAuthenticator: auth,
+					Storage:            storage,
+				}
 			case "player":
 				h = &player.Handler{Storage: storage}
 			}
@@ -39,5 +55,7 @@ Currently the available routers are:
 		},
 	}
 
+	serveCmd.Flags().String("username", "admin", "Basic authentication username")
+	serveCmd.Flags().String("password", "admin", "Basic authentication password")
 	rootCmd.AddCommand(serveCmd)
 }
