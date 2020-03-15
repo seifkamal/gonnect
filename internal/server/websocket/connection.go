@@ -6,14 +6,10 @@ import (
 
 	ws "github.com/gorilla/websocket"
 
-	"github.com/safe-k/gonnect/internal/app/server"
+	"github.com/safe-k/gonnect/internal/server"
 )
 
 type connectionUpgrader struct{}
-
-func ConnectionUpgrader() *connectionUpgrader {
-	return &connectionUpgrader{}
-}
 
 func (c *connectionUpgrader) Upgrade(w http.ResponseWriter, r *http.Request) (server.Websocket, error) {
 	upgrader := ws.Upgrader{
@@ -28,4 +24,8 @@ func (c *connectionUpgrader) Upgrade(w http.ResponseWriter, r *http.Request) (se
 	}
 
 	return &socket{conn}, err
+}
+
+func ConnectionUpgrader() *connectionUpgrader {
+	return &connectionUpgrader{}
 }

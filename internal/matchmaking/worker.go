@@ -6,24 +6,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/safe-k/gonnect/internal/domain"
+	"github.com/safe-k/gonnect"
 )
 
-type workerStorage interface {
-	GetPlayersSearching() (*domain.Players, error)
-	SaveMatch(match *domain.Match) error
-	SavePlayers(players *domain.Players) error
-}
-
-type worker struct {
-	Storage workerStorage
-}
-
-func Worker(storage workerStorage) *worker {
-	return &worker{
-		Storage: storage,
+type (
+	workerStorage interface {
+		GetPlayersSearching() (*gonnect.Players, error)
+		SaveMatch(match *gonnect.Match) error
+		SavePlayers(players *gonnect.Players) error
 	}
-}
+
+	worker struct {
+		Storage workerStorage
+	}
+)
 
 func (w *worker) Work(batch int) {
 	for {
@@ -65,9 +61,9 @@ func (w *worker) Work(batch int) {
 	}
 }
 
-func (w *worker) createMatch(mpp domain.Players) {
-	m := &domain.Match{
-		State:   domain.MatchReady,
+func (w *worker) createMatch(mpp gonnect.Players) {
+	m := &gonnect.Match{
+		State:   gonnect.MatchReady,
 		Players: mpp,
 	}
 
@@ -77,5 +73,11 @@ func (w *worker) createMatch(mpp domain.Players) {
 
 	if err := w.Storage.SavePlayers(mpp.Reserve()); err != nil {
 		log.Fatalln("Could not reserve m players", err)
+	}
+}
+
+func Worker(storage workerStorage) *worker {
+	return &worker{
+		Storage: storage,
 	}
 }

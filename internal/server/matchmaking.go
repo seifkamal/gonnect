@@ -9,26 +9,21 @@ import (
 
 	"github.com/go-chi/chi"
 
-	"github.com/safe-k/gonnect/internal/domain"
+	"github.com/safe-k/gonnect"
 )
 
-type matchmakingServerStorage interface {
-	GetMatchesByState(state string) (*domain.Matches, error)
-	GetMatchById(id int) (*domain.Match, error)
-	EndMatch(id int) error
-}
-
-type matchmakingServer struct {
-	Authenticator
-	Storage matchmakingServerStorage
-}
-
-func MatchmakingServer(auth Authenticator, storage matchmakingServerStorage) *matchmakingServer {
-	return &matchmakingServer{
-		Authenticator: auth,
-		Storage:       storage,
+type (
+	matchmakingServerStorage interface {
+		GetMatchesByState(state string) (*gonnect.Matches, error)
+		GetMatchById(id int) (*gonnect.Match, error)
+		EndMatch(id int) error
 	}
-}
+
+	matchmakingServer struct {
+		Authenticator
+		Storage matchmakingServerStorage
+	}
+)
 
 func (s *matchmakingServer) Serve(addr string) {
 	r := chi.NewRouter()
@@ -136,4 +131,11 @@ func (s *matchmakingServer) endMatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func MatchmakingServer(auth Authenticator, storage matchmakingServerStorage) *matchmakingServer {
+	return &matchmakingServer{
+		Authenticator: auth,
+		Storage:       storage,
+	}
 }

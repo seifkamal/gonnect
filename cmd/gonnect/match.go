@@ -1,12 +1,13 @@
-package cmd
+package main
 
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/safe-k/gonnect/internal/app"
+	"github.com/safe-k/gonnect/internal"
+	"github.com/safe-k/gonnect/internal/matchmaking"
 )
 
-func init() {
+func matchCommand() *cobra.Command {
 	matchCmd := &cobra.Command{
 		Use:     "match",
 		Short:   "Runs a matchmaking worker",
@@ -20,10 +21,14 @@ func init() {
 				return
 			}
 
-			app.MatchPlayers(batch)
+			storage := internal.Storage()
+			defer storage.Close()
+
+			matchmaking.Worker(storage).Work(batch)
 		},
 	}
 
 	matchCmd.Flags().IntP("batch", "b", 10, "Number of players per match")
-	rootCmd.AddCommand(matchCmd)
+
+	return matchCmd
 }

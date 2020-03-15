@@ -9,25 +9,20 @@ import (
 
 	"github.com/go-chi/chi"
 
-	"github.com/safe-k/gonnect/internal/domain"
+	"github.com/safe-k/gonnect"
 )
 
-type playerServerStorage interface {
-	GetActiveMatch(p domain.Player) (*domain.Match, error)
-	SavePlayer(p *domain.Player) error
-}
-
-type playerServer struct {
-	ConnectionUpgrader
-	Storage playerServerStorage
-}
-
-func PlayerServer(upgrader ConnectionUpgrader, storage playerServerStorage) *playerServer {
-	return &playerServer{
-		ConnectionUpgrader: upgrader,
-		Storage:            storage,
+type (
+	playerServerStorage interface {
+		GetActiveMatch(p gonnect.Player) (*gonnect.Match, error)
+		SavePlayer(p *gonnect.Player) error
 	}
-}
+
+	playerServer struct {
+		ConnectionUpgrader
+		Storage playerServerStorage
+	}
+)
 
 func (s *playerServer) Serve(addr string) {
 	r := chi.NewRouter()
@@ -73,13 +68,13 @@ func (s *playerServer) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	p := &domain.Player{}
+	p := &gonnect.Player{}
 	if err := ws.ReceiveJSON(p); err != nil {
 		log.Println("Websocket read error:", err)
 		return
 	}
 
-	matchChan := make(chan *domain.Match, 1)
+	matchChan := make(chan *gonnect.Match, 1)
 	go func() {
 		for {
 			select {
@@ -106,7 +101,7 @@ func (s *playerServer) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	p.State = domain.PlayerSearching
+	p.State = gonnect.PlayerSearching
 	if err := s.Storage.SavePlayer(p); err != nil {
 		log.Println("Could not update player", err)
 		cancel()
@@ -116,7 +111,7 @@ func (s *playerServer) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 	case <-ctx.Done():
 		log.Println("Cancel signal received, aborting request")
 
-		p.State = domain.PlayerUnavailable
+		p.State = gonnect.PlayerUnavailable
 		if err := s.Storage.SavePlayer(p); err != nil {
 			log.Println("Could not update player", err)
 		}
@@ -128,5 +123,12 @@ func (s *playerServer) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 		}
 
 		return
+	}
+}
+
+func PlayerServer(upgrader ConnectionUpgrader, storage playerServerStorage) *playerServer {
+	return &playerServer{
+		ConnectionUpgrader: upgrader,
+		Storage:            storage,
 	}
 }

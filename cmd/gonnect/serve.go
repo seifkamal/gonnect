@@ -1,13 +1,14 @@
-package cmd
+package main
 
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/safe-k/gonnect/internal/app"
-	"github.com/safe-k/gonnect/internal/app/server"
+	"github.com/safe-k/gonnect/internal"
+	"github.com/safe-k/gonnect/internal/server"
+	"github.com/safe-k/gonnect/internal/server/websocket"
 )
 
-func init() {
+func serveCommand() *cobra.Command {
 	validArgs := []string{"match", "player"}
 	serveCmd := &cobra.Command{
 		Use:   "serve [ROUTER]",
@@ -24,14 +25,17 @@ Currently the available routers are:
 		Run: func(cmd *cobra.Command, args []string) {
 			port := cmd.Flag("port").Value.String()
 
+			storage := internal.Storage()
+			defer storage.Close()
+
 			switch args[0] {
 			case "match":
 				user := cmd.Flag("username").Value.String()
 				pass := cmd.Flag("password").Value.String()
 
-				app.ServeMatchmaking(port, server.BasicAuthenticator(user, pass))
+				server.MatchmakingServer(server.BasicAuthenticator(user, pass), storage).Serve(port)
 			case "player":
-				app.ServePlayer(port)
+				server.PlayerServer(websocket.ConnectionUpgrader(), storage).Serve(port)
 			}
 		},
 	}
@@ -39,5 +43,6 @@ Currently the available routers are:
 	serveCmd.Flags().String("port", ":5000", "Port address to listen to")
 	serveCmd.Flags().StringP("username", "u", "admin", "Basic authentication username")
 	serveCmd.Flags().StringP("password", "p", "admin", "Basic authentication password")
-	rootCmd.AddCommand(serveCmd)
+
+	return serveCmd
 }
