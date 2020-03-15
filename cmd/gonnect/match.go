@@ -24,7 +24,7 @@ func matchCommand() *cobra.Command {
 			storage := internal.Storage()
 			defer storage.Close()
 
-			matchmaking.Worker(storage).Work(batch)
+			matchmaking.Worker(storage).WorkIndefinitely(batch)
 		},
 	}
 
