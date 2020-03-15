@@ -4,13 +4,17 @@ import (
 	"github.com/safe-k/gonnect/internal"
 	"github.com/safe-k/gonnect/internal/app/matchmaking"
 	"github.com/safe-k/gonnect/internal/app/server"
+	"github.com/safe-k/gonnect/internal/app/server/websocket"
 )
 
 func ServePlayer(addr string) {
 	storage := internal.Storage()
 	defer storage.Close()
 
-	s := &server.PlayerServer{Storage: storage}
+	s := &server.PlayerServer{
+		ConnectionUpgrader: websocket.ConnectionUpgrader(),
+		Storage:            storage,
+	}
 
 	s.Serve(addr)
 }

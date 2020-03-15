@@ -18,6 +18,7 @@ type playerServerStorage interface {
 }
 
 type PlayerServer struct {
+	ConnectionUpgrader
 	Storage playerServerStorage
 }
 
@@ -40,7 +41,7 @@ func (s *PlayerServer) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
-	ws, err := Websocket(w, r)
+	ws, err := s.Upgrade(w, r)
 	if err != nil {
 		log.Println("Websocket connection upgrade error:", err)
 		return
