@@ -24,6 +24,6 @@ func init() {
 		},
 	}
 
-	matchCmd.Flags().Int("batch", 10, "Number of players per match")
+	matchCmd.Flags().IntP("batch", "b", 10, "Number of players per match")
 	rootCmd.AddCommand(matchCmd)
 }

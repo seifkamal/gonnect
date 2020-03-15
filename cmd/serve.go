@@ -36,7 +36,7 @@ Currently the available routers are:
 	}
 
 	serveCmd.Flags().String("port", ":5000", "Port address to listen to")
-	serveCmd.Flags().String("username", "admin", "Basic authentication username")
-	serveCmd.Flags().String("password", "admin", "Basic authentication password")
+	serveCmd.Flags().StringP("username", "u", "admin", "Basic authentication username")
+	serveCmd.Flags().StringP("password", "p", "admin", "Basic authentication password")
 	rootCmd.AddCommand(serveCmd)
 }
