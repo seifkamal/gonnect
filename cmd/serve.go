@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/safe-k/gonnect/internal/app"
 	"github.com/safe-k/gonnect/internal/app/server"
 )
 
@@ -28,9 +29,9 @@ Currently the available routers are:
 				user := cmd.Flag("username").Value.String()
 				pass := cmd.Flag("password").Value.String()
 
-				server.ServeMatch(port, server.BasicAuthenticator(user, pass))
+				app.ServeMatchmaking(port, server.BasicAuthenticator(user, pass))
 			case "player":
-				server.ServePlayer(port)
+				app.ServePlayer(port)
 			}
 		},
 	}

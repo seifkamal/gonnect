@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/safe-k/gonnect/internal/app/matchmaker"
+	"github.com/safe-k/gonnect/internal/app"
 )
 
 func init() {
@@ -20,7 +20,7 @@ func init() {
 				return
 			}
 
-			matchmaker.Work(batch)
+			app.MatchPlayers(batch)
 		},
 	}
 

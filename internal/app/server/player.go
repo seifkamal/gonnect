@@ -17,11 +17,11 @@ type playerServerStorage interface {
 	SavePlayer(p *domain.Player) error
 }
 
-type playerServer struct {
+type PlayerServer struct {
 	Storage playerServerStorage
 }
 
-func (s *playerServer) Serve(addr string) {
+func (s *PlayerServer) Serve(addr string) {
 	r := chi.NewRouter()
 	r.Get("/player/match", s.getPlayerMatch)
 
@@ -36,7 +36,7 @@ func (s *playerServer) Serve(addr string) {
 	log.Fatal(http.ListenAndServe(addr, r))
 }
 
-func (s *playerServer) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
+func (s *PlayerServer) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 

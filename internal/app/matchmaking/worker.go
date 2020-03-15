@@ -1,4 +1,4 @@
-package matchmaker
+package matchmaking
 
 import (
 	"log"
@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/safe-k/gonnect/internal"
 	"github.com/safe-k/gonnect/internal/domain"
 )
 
@@ -16,11 +15,11 @@ type workerStorage interface {
 	SavePlayers(players *domain.Players) error
 }
 
-type worker struct {
+type Worker struct {
 	Storage workerStorage
 }
 
-func (w *worker) Work(batch int) {
+func (w *Worker) Work(batch int) {
 	for {
 		pp, err := w.Storage.GetPlayersSearching()
 		if err != nil {
@@ -60,7 +59,7 @@ func (w *worker) Work(batch int) {
 	}
 }
 
-func (w *worker) createMatch(mpp domain.Players) {
+func (w *Worker) createMatch(mpp domain.Players) {
 	m := &domain.Match{
 		State:   domain.MatchReady,
 		Players: mpp,
@@ -73,12 +72,4 @@ func (w *worker) createMatch(mpp domain.Players) {
 	if err := w.Storage.SavePlayers(mpp.Reserve()); err != nil {
 		log.Fatalln("Could not reserve m players", err)
 	}
-}
-
-func Work(batch int) {
-	storage := internal.Storage()
-	defer storage.Close()
-
-	w := &worker{Storage: storage}
-	w.Work(batch)
 }
