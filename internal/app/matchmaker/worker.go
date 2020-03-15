@@ -20,7 +20,7 @@ type worker struct {
 	Storage workerStorage
 }
 
-func (w *worker) Work(bch int) {
+func (w *worker) Work(batch int) {
 	for {
 		pp, err := w.Storage.GetPlayersSearching()
 		if err != nil {
@@ -29,22 +29,22 @@ func (w *worker) Work(bch int) {
 			}
 		}
 
-		mc := len(*pp) / bch
-		if mc == 0 {
+		mCount := len(*pp) / batch
+		if mCount == 0 {
 			log.Println("Waiting for more players")
 			<-time.After(2 * time.Second)
 			continue
 		}
 
-		log.Println("Creating matches. Count:", mc)
+		log.Println("Creating matches. Count:", mCount)
 
 		var (
 			wg sync.WaitGroup
 			s  = 0
-			e  = bch
+			e  = batch
 		)
 
-		for c := 1; c <= mc; c++ {
+		for c := 1; c <= mCount; c++ {
 			mpp := (*pp)[s:e]
 			wg.Add(1)
 			go func() {
@@ -52,8 +52,8 @@ func (w *worker) Work(bch int) {
 				w.createMatch(mpp)
 			}()
 
-			s += bch
-			e += bch
+			s += batch
+			e += batch
 		}
 
 		wg.Wait()
@@ -67,18 +67,18 @@ func (w *worker) createMatch(mpp domain.Players) {
 	}
 
 	if err := w.Storage.SaveMatch(m); err != nil {
-		log.Fatalln("Could not create match", err)
+		log.Fatalln("Could not create m", err)
 	}
 
 	if err := w.Storage.SavePlayers(mpp.Reserve()); err != nil {
-		log.Fatalln("Could not reserve match players", err)
+		log.Fatalln("Could not reserve m players", err)
 	}
 }
 
-func Work(bch int) {
+func Work(batch int) {
 	storage := internal.Storage()
 	defer storage.Close()
 
 	w := &worker{Storage: storage}
-	w.Work(bch)
+	w.Work(batch)
 }

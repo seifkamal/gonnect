@@ -40,9 +40,9 @@ func (s *playerServer) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
-	ws, err := WebSocket(w, r)
+	ws, err := Websocket(w, r)
 	if err != nil {
-		log.Println("WebSocket connection upgrade error:", err)
+		log.Println("Websocket connection upgrade error:", err)
 		return
 	}
 
@@ -67,7 +67,7 @@ func (s *playerServer) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 
 	p := &domain.Player{}
 	if err := ws.ReceiveJSON(p); err != nil {
-		log.Println("WebSocket read error:", err)
+		log.Println("Websocket read error:", err)
 		return
 	}
 
@@ -116,7 +116,7 @@ func (s *playerServer) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 		log.Println("Found match for player:", m.ID)
 
 		if err := ws.SendJSON(m); err != nil {
-			log.Println("WebSocket write error:", err)
+			log.Println("Websocket write error:", err)
 		}
 
 		return

@@ -45,8 +45,8 @@ func (s *matchmakingServer) Serve(addr string) {
 }
 
 func (s *matchmakingServer) getAllMatches(w http.ResponseWriter, r *http.Request) {
-	st := r.URL.Query().Get("state")
-	if st == "" {
+	state := r.URL.Query().Get("state")
+	if state == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		_, err := w.Write([]byte("'state' query parameter required"))
 		if err != nil {
@@ -57,7 +57,7 @@ func (s *matchmakingServer) getAllMatches(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	mm, err := s.Storage.GetMatchesByState(st)
+	mm, err := s.Storage.GetMatchesByState(state)
 	if err != nil {
 		log.Println("Could not find ready matches", err)
 		w.WriteHeader(http.StatusInternalServerError)

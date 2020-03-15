@@ -14,13 +14,13 @@ func init() {
 		Example: "gonnect match --batch 5",
 		Version: "1.0.0",
 		Run: func(cmd *cobra.Command, args []string) {
-			bch, err := cmd.Flags().GetInt("batch")
+			batch, err := cmd.Flags().GetInt("batch")
 			if err != nil {
 				cmd.PrintErr(err)
 				return
 			}
 
-			matchmaker.Work(bch)
+			matchmaker.Work(batch)
 		},
 	}
 
