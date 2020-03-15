@@ -18,12 +18,19 @@ type matchmakingServerStorage interface {
 	EndMatch(id int) error
 }
 
-type MatchmakingServer struct {
+type matchmakingServer struct {
 	Authenticator
 	Storage matchmakingServerStorage
 }
 
-func (s *MatchmakingServer) Serve(addr string) {
+func MatchmakingServer(auth Authenticator, storage matchmakingServerStorage) *matchmakingServer {
+	return &matchmakingServer{
+		Authenticator: auth,
+		Storage:       storage,
+	}
+}
+
+func (s *matchmakingServer) Serve(addr string) {
 	r := chi.NewRouter()
 	r.Route("/match", func(r chi.Router) {
 		r.Get("/all", s.getAllMatches)
@@ -44,7 +51,7 @@ func (s *MatchmakingServer) Serve(addr string) {
 	log.Fatal(http.ListenAndServe(addr, r))
 }
 
-func (s *MatchmakingServer) getAllMatches(w http.ResponseWriter, r *http.Request) {
+func (s *matchmakingServer) getAllMatches(w http.ResponseWriter, r *http.Request) {
 	state := r.URL.Query().Get("state")
 	if state == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -79,7 +86,7 @@ func (s *MatchmakingServer) getAllMatches(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (s *MatchmakingServer) getMatch(w http.ResponseWriter, r *http.Request) {
+func (s *matchmakingServer) getMatch(w http.ResponseWriter, r *http.Request) {
 	mID, err := strconv.Atoi(chi.URLParam(r, "matchId"))
 	if err != nil {
 		log.Println("Could not parse match ID param:", err)
@@ -113,7 +120,7 @@ func (s *MatchmakingServer) getMatch(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *MatchmakingServer) endMatch(w http.ResponseWriter, r *http.Request) {
+func (s *matchmakingServer) endMatch(w http.ResponseWriter, r *http.Request) {
 	mID, err := strconv.Atoi(chi.URLParam(r, "matchId"))
 	if err != nil {
 		log.Println("Could not parse match ID param:", err)

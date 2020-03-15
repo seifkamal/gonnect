@@ -15,11 +15,17 @@ type workerStorage interface {
 	SavePlayers(players *domain.Players) error
 }
 
-type Worker struct {
+type worker struct {
 	Storage workerStorage
 }
 
-func (w *Worker) Work(batch int) {
+func Worker(storage workerStorage) *worker {
+	return &worker{
+		Storage: storage,
+	}
+}
+
+func (w *worker) Work(batch int) {
 	for {
 		pp, err := w.Storage.GetPlayersSearching()
 		if err != nil {
@@ -59,7 +65,7 @@ func (w *Worker) Work(batch int) {
 	}
 }
 
-func (w *Worker) createMatch(mpp domain.Players) {
+func (w *worker) createMatch(mpp domain.Players) {
 	m := &domain.Match{
 		State:   domain.MatchReady,
 		Players: mpp,

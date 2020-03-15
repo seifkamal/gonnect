@@ -11,30 +11,19 @@ func ServePlayer(addr string) {
 	storage := internal.Storage()
 	defer storage.Close()
 
-	s := &server.PlayerServer{
-		ConnectionUpgrader: websocket.ConnectionUpgrader(),
-		Storage:            storage,
-	}
-
-	s.Serve(addr)
+	server.PlayerServer(websocket.ConnectionUpgrader(), storage).Serve(addr)
 }
 
 func ServeMatchmaking(addr string, auth server.Authenticator) {
 	storage := internal.Storage()
 	defer storage.Close()
 
-	s := &server.MatchmakingServer{
-		Authenticator: auth,
-		Storage:       storage,
-	}
-
-	s.Serve(addr)
+	server.MatchmakingServer(auth, storage).Serve(addr)
 }
 
 func MatchPlayers(batch int) {
 	storage := internal.Storage()
 	defer storage.Close()
 
-	w := &matchmaking.Worker{Storage: storage}
-	w.Work(batch)
+	matchmaking.Worker(storage).Work(batch)
 }
