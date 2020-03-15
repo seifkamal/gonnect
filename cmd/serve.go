@@ -10,10 +10,10 @@ func init() {
 	validArgs := []string{"match", "player"}
 	serveCmd := &cobra.Command{
 		Use:   "serve [ROUTER]",
-		Short: "Starts an API server",
-		Long: `Starts an API server with the specified router.
+		Short: "Starts an API api",
+		Long: `Starts an API api with the specified router.
 Currently the available routers are:
-- match [for use of the game server to retrieve match information]
+- match [for use of the game api to retrieve match information]
 - player [for use by the player clients to search for a match]
 `,
 		Example:   "gonnect serve player",
@@ -21,25 +21,12 @@ Currently the available routers are:
 		Args:      cobra.ExactValidArgs(1),
 		ValidArgs: validArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			port, err := cmd.Flags().GetString("port")
-			if err != nil {
-				cmd.PrintErr(err)
-				return
-			}
+			port := cmd.Flag("port").Value.String()
 
 			switch args[0] {
 			case "match":
-				user, err := cmd.Flags().GetString("user")
-				if err != nil {
-					cmd.PrintErr(err)
-					return
-				}
-
-				pass, err := cmd.Flags().GetString("pass")
-				if err != nil {
-					cmd.PrintErr(err)
-					return
-				}
+				user := cmd.Flag("username").Value.String()
+				pass := cmd.Flag("password").Value.String()
 
 				server.ServeMatch(port, server.BasicAuthenticator(user, pass))
 			case "player":

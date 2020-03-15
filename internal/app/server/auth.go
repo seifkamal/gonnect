@@ -2,6 +2,10 @@ package server
 
 import "net/http"
 
+type Authenticator interface {
+	Authenticate(f http.HandlerFunc) http.HandlerFunc
+}
+
 type basicAuthenticator struct {
 	username string
 	password string

@@ -1,4 +1,4 @@
-package match
+package server
 
 import (
 	"encoding/json"
@@ -12,28 +12,24 @@ import (
 	"github.com/safe-k/gonnect/internal/domain"
 )
 
-type Authenticator interface {
-	Authenticate(f http.HandlerFunc) http.HandlerFunc
-}
-
-type storage interface {
+type matchmakingServerStorage interface {
 	GetMatchesByState(state string) (*domain.Matches, error)
 	GetMatchById(id int) (*domain.Match, error)
 	EndMatch(id int) error
 }
 
-type Server struct {
+type matchmakingServer struct {
 	Authenticator
-	Storage storage
+	Storage matchmakingServerStorage
 }
 
-func (s *Server) Serve(addr string) {
+func (s *matchmakingServer) Serve(addr string) {
 	r := chi.NewRouter()
 	r.Route("/match", func(r chi.Router) {
 		r.Get("/all", s.getAllMatches)
 		r.Route("/{matchId}", func(r chi.Router) {
 			r.Get("/", s.getMatch)
-			r.Post("/end", s.Authenticator.Authenticate(s.endMatch))
+			r.Post("/end", s.Authenticate(s.endMatch))
 		})
 	})
 
@@ -48,7 +44,7 @@ func (s *Server) Serve(addr string) {
 	log.Fatal(http.ListenAndServe(addr, r))
 }
 
-func (s *Server) getAllMatches(w http.ResponseWriter, r *http.Request) {
+func (s *matchmakingServer) getAllMatches(w http.ResponseWriter, r *http.Request) {
 	st := r.URL.Query().Get("state")
 	if st == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -83,7 +79,7 @@ func (s *Server) getAllMatches(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) getMatch(w http.ResponseWriter, r *http.Request) {
+func (s *matchmakingServer) getMatch(w http.ResponseWriter, r *http.Request) {
 	mID, err := strconv.Atoi(chi.URLParam(r, "matchId"))
 	if err != nil {
 		log.Println("Could not parse match ID param:", err)
@@ -117,7 +113,7 @@ func (s *Server) getMatch(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) endMatch(w http.ResponseWriter, r *http.Request) {
+func (s *matchmakingServer) endMatch(w http.ResponseWriter, r *http.Request) {
 	mID, err := strconv.Atoi(chi.URLParam(r, "matchId"))
 	if err != nil {
 		log.Println("Could not parse match ID param:", err)

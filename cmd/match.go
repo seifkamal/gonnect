@@ -20,7 +20,7 @@ func init() {
 				return
 			}
 
-			matchmaker.Match(bch)
+			matchmaker.Work(bch)
 		},
 	}
 

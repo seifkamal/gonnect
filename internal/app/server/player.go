@@ -1,4 +1,4 @@
-package player
+package server
 
 import (
 	"context"
@@ -9,20 +9,19 @@ import (
 
 	"github.com/go-chi/chi"
 
-	"github.com/safe-k/gonnect/internal/app/server/websocket"
 	"github.com/safe-k/gonnect/internal/domain"
 )
 
-type storage interface {
+type playerServerStorage interface {
 	GetActiveMatch(p domain.Player) (*domain.Match, error)
 	SavePlayer(p *domain.Player) error
 }
 
-type Server struct {
-	Storage storage
+type playerServer struct {
+	Storage playerServerStorage
 }
 
-func (s *Server) Serve(addr string) {
+func (s *playerServer) Serve(addr string) {
 	r := chi.NewRouter()
 	r.Get("/player/match", s.getPlayerMatch)
 
@@ -37,13 +36,13 @@ func (s *Server) Serve(addr string) {
 	log.Fatal(http.ListenAndServe(addr, r))
 }
 
-func (s *Server) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
+func (s *playerServer) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
-	ws, err := websocket.Upgrade(w, r)
+	ws, err := WebSocket(w, r)
 	if err != nil {
-		log.Println("Upgrade connection upgrade error:", err)
+		log.Println("WebSocket connection upgrade error:", err)
 		return
 	}
 
@@ -68,7 +67,7 @@ func (s *Server) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 
 	p := &domain.Player{}
 	if err := ws.ReceiveJSON(p); err != nil {
-		log.Println("Upgrade read error:", err)
+		log.Println("WebSocket read error:", err)
 		return
 	}
 
@@ -117,7 +116,7 @@ func (s *Server) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 		log.Println("Found match for player:", m.ID)
 
 		if err := ws.SendJSON(m); err != nil {
-			log.Println("Upgrade write error:", err)
+			log.Println("WebSocket write error:", err)
 		}
 
 		return
