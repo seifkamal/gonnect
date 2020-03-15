@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-chi/chi"
 
-	"github.com/safe-k/gonnect/internal/app/server"
+	"github.com/safe-k/gonnect/internal/app/server/websocket"
 	"github.com/safe-k/gonnect/internal/domain"
 )
 
@@ -18,23 +18,32 @@ type storage interface {
 	SavePlayer(p *domain.Player) error
 }
 
-type Handler struct {
+type Server struct {
 	Storage storage
 }
 
-func (h *Handler) Router() http.Handler {
+func (s *Server) Serve(addr string) {
 	r := chi.NewRouter()
-	r.Get("/player/match", h.getPlayerMatch)
-	return r
+	r.Get("/player/match", s.getPlayerMatch)
+
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("Could not complete request:", err)
+			return
+		}
+	}()
+
+	log.Println("Listening on port", addr)
+	log.Fatal(http.ListenAndServe(addr, r))
 }
 
-func (h *Handler) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
+func (s *Server) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
-	ws, err := server.WebSocket(w, r)
+	ws, err := websocket.Upgrade(w, r)
 	if err != nil {
-		log.Println("WebSocket connection upgrade error:", err)
+		log.Println("Upgrade connection upgrade error:", err)
 		return
 	}
 
@@ -59,7 +68,7 @@ func (h *Handler) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 
 	p := &domain.Player{}
 	if err := ws.ReceiveJSON(p); err != nil {
-		log.Println("WebSocket read error:", err)
+		log.Println("Upgrade read error:", err)
 		return
 	}
 
@@ -71,7 +80,7 @@ func (h *Handler) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 				log.Println("Cancel signal received, aborting match check")
 				return
 			default:
-				m, err := h.Storage.GetActiveMatch(*p)
+				m, err := s.Storage.GetActiveMatch(*p)
 				if err != nil {
 					if !strings.Contains(err.Error(), "no rows") {
 						log.Println("Could not fetch match data", err)
@@ -91,7 +100,7 @@ func (h *Handler) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	p.State = domain.PlayerSearching
-	if err := h.Storage.SavePlayer(p); err != nil {
+	if err := s.Storage.SavePlayer(p); err != nil {
 		log.Println("Could not update player", err)
 		cancel()
 	}
@@ -101,14 +110,14 @@ func (h *Handler) getPlayerMatch(w http.ResponseWriter, r *http.Request) {
 		log.Println("Cancel signal received, aborting request")
 
 		p.State = domain.PlayerUnavailable
-		if err := h.Storage.SavePlayer(p); err != nil {
+		if err := s.Storage.SavePlayer(p); err != nil {
 			log.Println("Could not update player", err)
 		}
 	case m := <-matchChan:
 		log.Println("Found match for player:", m.ID)
 
 		if err := ws.SendJSON(m); err != nil {
-			log.Println("WebSocket write error:", err)
+			log.Println("Upgrade write error:", err)
 		}
 
 		return

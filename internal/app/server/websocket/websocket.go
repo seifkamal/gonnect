@@ -1,4 +1,4 @@
-package server
+package websocket
 
 import (
 	"log"
@@ -12,7 +12,7 @@ type webSocket struct {
 	conn *websocket.Conn
 }
 
-func WebSocket(w http.ResponseWriter, r *http.Request) (*webSocket, error) {
+func Upgrade(w http.ResponseWriter, r *http.Request) (*webSocket, error) {
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,

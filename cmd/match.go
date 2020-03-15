@@ -3,7 +3,6 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/safe-k/gonnect/internal"
 	"github.com/safe-k/gonnect/internal/app/matchmaker"
 )
 
@@ -21,11 +20,7 @@ func init() {
 				return
 			}
 
-			Storage := internal.Storage()
-			defer Storage.Close()
-
-			w := &matchmaker.Worker{Storage: Storage}
-			w.Match(bch)
+			matchmaker.Match(bch)
 		},
 	}
 

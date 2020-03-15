@@ -1,23 +1,28 @@
 package server
 
 import (
-	"log"
-	"net/http"
+	"github.com/safe-k/gonnect/internal"
+	"github.com/safe-k/gonnect/internal/app/server/match"
+	"github.com/safe-k/gonnect/internal/app/server/player"
 )
 
-type Handler interface {
-	Router() http.Handler
+func ServePlayer(addr string) {
+	storage := internal.Storage()
+	defer storage.Close()
+
+	s := &player.Server{Storage: storage}
+
+	s.Serve(addr)
 }
 
-func Serve(h Handler) {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Println("Could not complete request:", err)
-			return
-		}
-	}()
+func ServeMatch(addr string, auth match.Authenticator) {
+	storage := internal.Storage()
+	defer storage.Close()
 
-	const port = ":5000"
-	log.Println("Listening on port", port)
-	log.Fatal(http.ListenAndServe(port, h.Router()))
+	s := &match.Server{
+		Authenticator: auth,
+		Storage:       storage,
+	}
+
+	s.Serve(addr)
 }

@@ -9,9 +9,12 @@ import (
 
 	"github.com/go-chi/chi"
 
-	"github.com/safe-k/gonnect/internal/app/server"
 	"github.com/safe-k/gonnect/internal/domain"
 )
+
+type Authenticator interface {
+	Authenticate(f http.HandlerFunc) http.HandlerFunc
+}
 
 type storage interface {
 	GetMatchesByState(state string) (*domain.Matches, error)
@@ -19,24 +22,33 @@ type storage interface {
 	EndMatch(id int) error
 }
 
-type Handler struct {
-	server.BasicAuthenticator
+type Server struct {
+	Authenticator
 	Storage storage
 }
 
-func (h *Handler) Router() http.Handler {
+func (s *Server) Serve(addr string) {
 	r := chi.NewRouter()
 	r.Route("/match", func(r chi.Router) {
-		r.Get("/all", h.getAllMatches)
+		r.Get("/all", s.getAllMatches)
 		r.Route("/{matchId}", func(r chi.Router) {
-			r.Get("/", h.getMatch)
-			r.Post("/end", h.Authenticate(h.endMatch))
+			r.Get("/", s.getMatch)
+			r.Post("/end", s.Authenticator.Authenticate(s.endMatch))
 		})
 	})
-	return r
+
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("Could not complete request:", err)
+			return
+		}
+	}()
+
+	log.Println("Listening on port", addr)
+	log.Fatal(http.ListenAndServe(addr, r))
 }
 
-func (h *Handler) getAllMatches(w http.ResponseWriter, r *http.Request) {
+func (s *Server) getAllMatches(w http.ResponseWriter, r *http.Request) {
 	st := r.URL.Query().Get("state")
 	if st == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -49,7 +61,7 @@ func (h *Handler) getAllMatches(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mm, err := h.Storage.GetMatchesByState(st)
+	mm, err := s.Storage.GetMatchesByState(st)
 	if err != nil {
 		log.Println("Could not find ready matches", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -71,7 +83,7 @@ func (h *Handler) getAllMatches(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) getMatch(w http.ResponseWriter, r *http.Request) {
+func (s *Server) getMatch(w http.ResponseWriter, r *http.Request) {
 	mID, err := strconv.Atoi(chi.URLParam(r, "matchId"))
 	if err != nil {
 		log.Println("Could not parse match ID param:", err)
@@ -79,7 +91,7 @@ func (h *Handler) getMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m, err := h.Storage.GetMatchById(mID)
+	m, err := s.Storage.GetMatchById(mID)
 	if err != nil {
 		if strings.Contains(err.Error(), "no rows") {
 			w.WriteHeader(http.StatusNotFound)
@@ -105,7 +117,7 @@ func (h *Handler) getMatch(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) endMatch(w http.ResponseWriter, r *http.Request) {
+func (s *Server) endMatch(w http.ResponseWriter, r *http.Request) {
 	mID, err := strconv.Atoi(chi.URLParam(r, "matchId"))
 	if err != nil {
 		log.Println("Could not parse match ID param:", err)
@@ -113,7 +125,7 @@ func (h *Handler) endMatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.Storage.EndMatch(mID)
+	err = s.Storage.EndMatch(mID)
 	if err != nil {
 		log.Println("Could not update match:", err)
 		w.WriteHeader(http.StatusInternalServerError)

@@ -1,4 +1,4 @@
-package matchmaker
+package worker
 
 import (
 	"log"
@@ -19,7 +19,7 @@ type Worker struct {
 	Storage storage
 }
 
-func (w *Worker) Match(bch int) {
+func (w *Worker) Work(bch int) {
 	for {
 		pp, err := w.Storage.GetPlayersSearching()
 		if err != nil {

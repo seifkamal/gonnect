@@ -3,10 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/safe-k/gonnect/internal"
 	"github.com/safe-k/gonnect/internal/app/server"
-	"github.com/safe-k/gonnect/internal/app/server/match"
-	"github.com/safe-k/gonnect/internal/app/server/player"
 )
 
 func init() {
@@ -24,10 +21,12 @@ Currently the available routers are:
 		Args:      cobra.ExactValidArgs(1),
 		ValidArgs: validArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			storage := internal.Storage()
-			defer storage.Close()
+			port, err := cmd.Flags().GetString("port")
+			if err != nil {
+				cmd.PrintErr(err)
+				return
+			}
 
-			var h server.Handler
 			switch args[0] {
 			case "match":
 				user, err := cmd.Flags().GetString("user")
@@ -42,19 +41,14 @@ Currently the available routers are:
 					return
 				}
 
-				auth := server.NewBasicAuthenticator(user, pass)
-				h = &match.Handler{
-					BasicAuthenticator: auth,
-					Storage:            storage,
-				}
+				server.ServeMatch(port, server.BasicAuthenticator(user, pass))
 			case "player":
-				h = &player.Handler{Storage: storage}
+				server.ServePlayer(port)
 			}
-
-			server.Serve(h)
 		},
 	}
 
+	serveCmd.Flags().String("port", ":5000", "Port address to listen to")
 	serveCmd.Flags().String("username", "admin", "Basic authentication username")
 	serveCmd.Flags().String("password", "admin", "Basic authentication password")
 	rootCmd.AddCommand(serveCmd)
