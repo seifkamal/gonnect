@@ -4,6 +4,10 @@ A simple online game matchmaking server.
 
 ## Features
 
+You can run any command or subcommand with the `help` flag to see descriptions, examples, and acceptable flags.
+
+Here's a summary of the available features:
+
 ### Server
 
 A server can be started by running the `serve` command, and specifying a handler. Currently the supported handlers are:
@@ -12,8 +16,11 @@ A server can be started by running the `serve` command, and specifying a handler
 
 **Example:**
 ```shell script
-> gonnect serve player
+> gonnect serve match --port :8080 -u admin -p honeyisgood
 ```
+
+Some endpoints require basic authorisation; See the `help` print for this command for information on how to change
+the default credentials.
 
 #### `player`
 
