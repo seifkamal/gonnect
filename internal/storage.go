@@ -2,6 +2,7 @@ package internal
 
 import (
 	"log"
+	"strings"
 
 	"github.com/gobuffalo/pop"
 
@@ -30,6 +31,12 @@ func (s *storage) GetActiveMatch(p gonnect.Player) (*gonnect.Match, error) {
 func (s *storage) GetPlayersSearching() (*gonnect.Players, error) {
 	pp := &gonnect.Players{}
 	if err := s.Where("state = ?", gonnect.PlayerSearching).All(pp); err != nil {
+		if NoRowsFound(err) {
+			err = gonnect.NoResultsFound{
+				Query:  "players by state",
+				Values: map[string]interface{}{"state": gonnect.PlayerSearching},
+			}
+		}
 		return nil, err
 	}
 
@@ -47,6 +54,12 @@ func (s *storage) SavePlayers(pp *gonnect.Players) error {
 func (s *storage) GetMatchById(id int) (*gonnect.Match, error) {
 	m := &gonnect.Match{}
 	if err := s.Find(m, id); err != nil {
+		if NoRowsFound(err) {
+			err = gonnect.NoResultsFound{
+				Query:  "match by ID",
+				Values: map[string]interface{}{"id": id},
+			}
+		}
 		return nil, err
 	}
 
@@ -56,6 +69,12 @@ func (s *storage) GetMatchById(id int) (*gonnect.Match, error) {
 func (s *storage) GetMatchesByState(state string) (*gonnect.Matches, error) {
 	mm := &gonnect.Matches{}
 	if err := s.Where("state = ?", state).All(mm); err != nil {
+		if NoRowsFound(err) {
+			err = gonnect.NoResultsFound{
+				Query:  "matches by state",
+				Values: map[string]interface{}{"state": state},
+			}
+		}
 		return nil, err
 	}
 
@@ -77,4 +96,8 @@ func Storage() *storage {
 	}
 
 	return &storage{db}
+}
+
+func NoRowsFound(err error) bool {
+	return strings.Contains(err.Error(), "no rows")
 }
