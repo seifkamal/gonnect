@@ -1,3 +1,5 @@
+![Test](https://github.com/safe-k/gonnect/workflows/Test/badge.svg)
+
 # Gonnect
 
 A simple online game matchmaking server.
