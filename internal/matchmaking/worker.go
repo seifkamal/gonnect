@@ -20,13 +20,14 @@ type (
 	}
 )
 
-func (w *worker) WorkIndefinitely(batch int) {
+func (w *worker) WorkIndefinitely(batch, retryInterval int) {
+	interval := time.Duration(retryInterval)
 	for {
 		if err := w.Work(batch); err != nil {
 			switch err.(type) {
 			case gonnect.NoResultsFound, gonnect.InsufficientPlayers:
 				log.Println("Waiting for more players")
-				<-time.After(2 * time.Second)
+				<-time.After(interval * time.Second)
 				continue
 			default:
 				log.Fatal(err)

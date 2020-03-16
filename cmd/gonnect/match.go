@@ -21,14 +21,21 @@ func matchCommand() *cobra.Command {
 				return
 			}
 
+			retryInterval, err := cmd.Flags().GetInt("retry-interval")
+			if err != nil {
+				cmd.PrintErr(err)
+				return
+			}
+
 			storage := internal.Storage()
 			defer storage.Close()
 
-			matchmaking.Worker(storage).WorkIndefinitely(batch)
+			matchmaking.Worker(storage).WorkIndefinitely(batch, retryInterval)
 		},
 	}
 
 	matchCmd.Flags().IntP("batch", "b", 10, "Number of players per match")
+	matchCmd.Flags().IntP("retry-interval", "r", 2, "Amount of time (in seconds) to wait before retrying when not enough players are available")
 
 	return matchCmd
 }
