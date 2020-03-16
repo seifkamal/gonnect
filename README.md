@@ -48,3 +48,30 @@ via the `batch` flag; The default is 10.
 ```
 
 This will run an ongoing process that will create a new match whenever enough players are searching.
+
+## Future Work
+
+This section lists features that will likely need to be added, in order to make this usable in a real life scenario.
+
+### Matching by criteria
+
+Players will usually have some context attached to them (eg. rank, region, match mode). This will need to be taken
+into consideration when matching players. Additionally, player "standards" should drop depending on how long they've
+been searching for match.
+
+## Technical Upgrades
+
+This section lists potential upgrades for some areas of the application.
+
+### gRPC Server
+
+Using gRPC for the server components instead of the current REST/Websocket implementation _could_ result in the
+following benefits: 
+- Protocol Buffers allow for the requests/responses to be typed (and fast)
+- Application client code can be generated in several other languages
+- Matchmaking and player server implementations can be standardised
+
+### PostgresSQL
+
+PostgresSQL asynchronous messaging and notifications could be utilised here. An immediate example would be to replace
+the DB polling during [player matching](https://github.com/safe-k/gonnect/blob/70bdd14410b1492e6cef78fdd146302390ca9b71/internal/server/player.go#L85-L99).
