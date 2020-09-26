@@ -6,7 +6,7 @@ import (
 
 	"github.com/gobuffalo/pop"
 
-	"github.com/safe-k/gonnect"
+	"github.com/seifkamal/gonnect"
 )
 
 type storage struct {

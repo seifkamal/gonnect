@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/safe-k/gonnect"
+	"github.com/seifkamal/gonnect"
 )
 
 type mockWorkerStorage struct {

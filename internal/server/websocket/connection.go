@@ -6,7 +6,7 @@ import (
 
 	ws "github.com/gorilla/websocket"
 
-	"github.com/safe-k/gonnect/internal/server"
+	"github.com/seifkamal/gonnect/internal/server"
 )
 
 type connectionUpgrader struct{}
