@@ -1,4 +1,4 @@
-![Test](https://github.com/safe-k/gonnect/workflows/Test/badge.svg)
+![Test](https://github.com/seifkamal/gonnect/workflows/Test/badge.svg)
 
 # Gonnect
 
@@ -74,4 +74,4 @@ following benefits:
 ### PostgresSQL
 
 PostgresSQL asynchronous messaging and notifications could be utilised here. An immediate example would be to replace
-the DB polling during [player matching](https://github.com/safe-k/gonnect/blob/70bdd14410b1492e6cef78fdd146302390ca9b71/internal/server/player.go#L85-L99).
+the DB polling during [player matching](https://github.com/seifkamal/gonnect/blob/70bdd14410b1492e6cef78fdd146302390ca9b71/internal/server/player.go#L85-L99).

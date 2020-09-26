@@ -1,4 +1,4 @@
-module github.com/safe-k/gonnect
+module github.com/seifkamal/gonnect
 
 go 1.14
 

@@ -3,9 +3,9 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/safe-k/gonnect/internal"
-	"github.com/safe-k/gonnect/internal/server"
-	"github.com/safe-k/gonnect/internal/server/websocket"
+	"github.com/seifkamal/gonnect/internal"
+	"github.com/seifkamal/gonnect/internal/server"
+	"github.com/seifkamal/gonnect/internal/server/websocket"
 )
 
 func serveCommand() *cobra.Command {

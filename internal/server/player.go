@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-chi/chi"
 
-	"github.com/safe-k/gonnect"
+	"github.com/seifkamal/gonnect"
 )
 
 type (

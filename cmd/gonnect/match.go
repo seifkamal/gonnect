@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/safe-k/gonnect/internal"
-	"github.com/safe-k/gonnect/internal/matchmaking"
+	"github.com/seifkamal/gonnect/internal"
+	"github.com/seifkamal/gonnect/internal/matchmaking"
 )
 
 func matchCommand() *cobra.Command {
